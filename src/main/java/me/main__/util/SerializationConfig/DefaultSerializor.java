@@ -1,25 +1,45 @@
 package me.main__.util.SerializationConfig;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A default {@link Serializor}-implementation that tries to serialize objects to strings.
+ * A default {@link Serializor}-implementation that tries to serialize an object to a string or a
+ * {@code Map<String, Object>}, if the object is a {@link SerializationConfig}.
  * <p>
  * It fails silently.
  */
 public final class DefaultSerializor<T> implements Serializor<T, Object> {
+    /**
+     * {@inheritDoc}
+     */
     public Object serialize(Object object) {
+        if (object instanceof SerializationConfig) {
+            // this one is serializable itself
+            return object;
+        }
         return String.valueOf(object);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     public T deserialize(Object serialized, Class<T> anothertype) {
         try {
             if (String.class.isAssignableFrom(anothertype))
                 return (T) serialized;
+
+            if (SerializationConfig.class.isAssignableFrom(anothertype)) {
+                // this one is serializable itself ==> serialized should be a string-object-map
+                Map<String, Object> serMap = (Map<String, Object>) serialized;
+                // now we need the deserialization-constructor
+                Constructor<T> ctor = anothertype.getConstructor(Map.class);
+                return ctor.newInstance(serMap);
+            }
 
             Class<?> type;
             if (primitiveToWrapperMap.containsKey(anothertype))

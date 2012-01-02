@@ -26,6 +26,9 @@ public class SerializationConfigTest {
     @Test
     public void test() throws Exception {
         try {
+            // register classes
+            SerializationConfig.registerAll(TestConfiguration.class);
+
             File configFile = new File("testConfig.yml");
             configFile.createNewFile();
             FileConfiguration config1 = YamlConfiguration.loadConfiguration(configFile); // load empty configuration
@@ -43,10 +46,12 @@ public class SerializationConfigTest {
             assertEquals("test2", testConfig.test2);
             assertEquals("awesome", testConfig.custom.val);
             assertEquals(false, testConfig.bool);
+            assertEquals("subTest", testConfig.subConfig.val);
             testConfig.test1 = "new";
             testConfig.test2 = "new";
             testConfig.bool = true;
             testConfig.custom.val = "new";
+            testConfig.subConfig.val = "new";
             config2.set("testobject", testConfig);
             config2.save(configFile);
 
@@ -57,6 +62,7 @@ public class SerializationConfigTest {
             assertEquals("test2", testConfig.test2);
             assertEquals(true, testConfig.bool);
             assertEquals("new", testConfig.custom.val);
+            assertEquals("new", testConfig.subConfig.val);
         }
         finally {
             new File("testConfig.yml").delete();

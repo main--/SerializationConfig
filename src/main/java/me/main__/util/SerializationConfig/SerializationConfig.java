@@ -25,6 +25,26 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     }
 
     /**
+     * Registers the specified Class with Bukkit.
+     * @param clazz The class.
+     */
+    public static void registerAll(Class<? extends SerializationConfig> clazz) {
+        ConfigurationSerialization.registerClass(clazz);
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field f : fields) {
+            f.setAccessible(true);
+            if (f.isAnnotationPresent(Property.class)) {
+                Class<?> fieldclazz = f.getType();
+                if (ConfigurationSerializable.class.isAssignableFrom(fieldclazz)) {
+                    Class<? extends ConfigurationSerializable> subclass = fieldclazz.asSubclass(ConfigurationSerializable.class);
+                    ConfigurationSerialization.registerClass(subclass);
+                }
+            }
+            f.setAccessible(false);
+        }
+    }
+
+    /**
      * This is the constructor used by Bukkit to deserialize the object.
      * Yep, this does the actual deserialization-work so make sure to have a constructor
      * that takes a {@code Map<String, Object>} and passes it to this super implementation.

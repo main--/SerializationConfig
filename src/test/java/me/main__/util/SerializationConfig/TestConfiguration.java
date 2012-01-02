@@ -8,13 +8,20 @@ public class TestConfiguration extends SerializationConfig {
 
     @Property
     public String test1;
+    // values without the annotation won't be serialized
     public String test2;
 
+    // primitives can be serialized
     @Property
     public boolean bool;
 
+    // custom serializors work
     @Property(MyCustomSerializor.class)
     public MyCustomType custom;
+
+    // the default serializor supports SerializationConfigs
+    @Property
+    public TestSubConfig subConfig;
 
     public TestConfiguration() {
         super();
@@ -33,6 +40,8 @@ public class TestConfiguration extends SerializationConfig {
 
         custom = new MyCustomType();
         custom.val = "awesome";
+
+        subConfig = new TestSubConfig();
     }
 
     public static void register() {
