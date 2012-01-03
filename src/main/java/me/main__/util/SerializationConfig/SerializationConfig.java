@@ -60,10 +60,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
                     Property propertyInfo = f.getAnnotation(Property.class);
-                    Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.value();
-                    // try to create a new serializor
-                    Constructor<Serializor<?, ?>> ctor = serializorClass.getConstructor();
-                    Serializor serializor = ctor.newInstance();
+                    Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends Serializor<?, ?>>) propertyInfo.value();
+                    // get the serializor from SerializorCache
+                    Serializor serializor = SerializorCache.getSerializor(serializorClass);
                     // deserialize it and set the field
                     Object value = serializor.deserialize(values.get(f.getName()), f.getType());
                     if (value != null)
@@ -91,9 +90,8 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     // let's continue and try to serialize it
                     Property propertyInfo = f.getAnnotation(Property.class);
                     Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.value();
-                    // try to create a new serializor
-                    Constructor<Serializor<?, ?>> ctor = serializorClass.getConstructor();
-                    Serializor serializor = ctor.newInstance();
+                    // get the serializor from SerializorCache
+                    Serializor serializor = SerializorCache.getSerializor(serializorClass);
                     // serialize it and put it into the output-map
                     ret.put(f.getName(), serializor.serialize(f.get(this)));
                 } catch (Exception e) {
