@@ -1,6 +1,5 @@
 package me.main__.util.SerializationConfig;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,6 +37,26 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 if (ConfigurationSerializable.class.isAssignableFrom(fieldclazz)) {
                     Class<? extends ConfigurationSerializable> subclass = fieldclazz.asSubclass(ConfigurationSerializable.class);
                     ConfigurationSerialization.registerClass(subclass);
+                }
+            }
+            f.setAccessible(false);
+        }
+    }
+
+    /**
+     * Unregisters the specified Class from Bukkit.
+     * @param clazz The class.
+     */
+    public static void unregisterAll(Class<? extends SerializationConfig> clazz) {
+        ConfigurationSerialization.unregisterClass(clazz);
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field f : fields) {
+            f.setAccessible(true);
+            if (f.isAnnotationPresent(Property.class)) {
+                Class<?> fieldclazz = f.getType();
+                if (ConfigurationSerializable.class.isAssignableFrom(fieldclazz)) {
+                    Class<? extends ConfigurationSerializable> subclass = fieldclazz.asSubclass(ConfigurationSerializable.class);
+                    ConfigurationSerialization.unregisterClass(subclass);
                 }
             }
             f.setAccessible(false);
