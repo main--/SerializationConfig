@@ -54,4 +54,11 @@
             <url>http://repo.bukkit.org/content/repositories/public</url>
         </repository>
     </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>OnARandomBox</id>
+            <url>http://repo.onarandombox.com/content/repositories/bukkit-thirdparty</url>
+        </repository>
+    </distributionManagement>
 </project>
