@@ -123,6 +123,48 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     }
 
     /**
+     * Sets a property using a {@link String}.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
+     * @return True at success, false if the operation failed.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public final boolean setProperty(String property, String value) {
+        try {
+            String[] nodes = property.split("\\.");
+            if (nodes.length == 1) {
+                Field theField = this.getClass().getDeclaredField(nodes[0]);
+                theField.setAccessible(true);
+                if (!theField.isAnnotationPresent(Property.class))
+                    throw new Exception();
+                Property propertyInfo = theField.getAnnotation(Property.class);
+                Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.value();
+                Serializor serializor = SerializorCache.getSerializor(serializorClass);
+                theField.set(this, serializor.deserialize(value, theField.getType()));
+                theField.setAccessible(false);
+                return true;
+            }
+            // recursion...
+            String nextNode = nodes[0];
+            Field nodeField = this.getClass().getDeclaredField(nextNode);
+            nodeField.setAccessible(true);
+            if (!nodeField.isAnnotationPresent(Property.class))
+                throw new Exception();
+            SerializationConfig child = (SerializationConfig) nodeField.get(this);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i < nodes.length; i++) {
+                sb.append(nodes[i]).append('.');
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            return child.setProperty(sb.toString(), value);
+        } catch (Exception e) {
+            // we fail sliently
+        }
+        return false;
+    }
+
+    /**
      * This method sets properties in this object to their default-values.
      * <p>
      * <b>IMPORTANT: All properties have to be initialized HERE, never in/before the constructor!</b>

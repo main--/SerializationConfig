@@ -1,6 +1,6 @@
 package me.main__.util.SerializationConfig;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.File;
 
@@ -51,7 +51,9 @@ public class SerializationConfigTest {
             testConfig.test2 = "new";
             testConfig.bool = true;
             testConfig.custom.val = "new";
-            testConfig.subConfig.val = "new";
+            assertFalse(testConfig.setProperty("invalidproperty", "invalidvalue"));
+            assertTrue(testConfig.setProperty("subConfig.val", "new"));
+            assertEquals("new", testConfig.subConfig.val);
             config2.set("testobject", testConfig);
             config2.save(configFile);
 
