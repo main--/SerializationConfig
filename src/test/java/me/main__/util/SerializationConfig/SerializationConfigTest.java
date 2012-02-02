@@ -39,7 +39,6 @@ public class SerializationConfigTest {
             config1.save(configFile);
 
             // load it once again
-            TestConfiguration.register();
             FileConfiguration config2 = YamlConfiguration.loadConfiguration(configFile);
             testConfig = (TestConfiguration) config2.get("testobject");
             assertEquals("test1", testConfig.test1);

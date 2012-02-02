@@ -2,8 +2,6 @@ package me.main__.util.SerializationConfig;
 
 import java.util.Map;
 
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
-
 public class TestConfiguration extends SerializationConfig {
 
     @Property
@@ -42,9 +40,5 @@ public class TestConfiguration extends SerializationConfig {
         custom.val = "awesome";
 
         subConfig = new TestSubConfig();
-    }
-
-    public static void register() {
-        ConfigurationSerialization.registerClass(TestConfiguration.class);
     }
 }
