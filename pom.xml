@@ -60,5 +60,9 @@
             <id>OnARandomBox</id>
             <url>http://repo.onarandombox.com/content/repositories/bukkit-thirdparty</url>
         </repository>
+        <snapshotRepository>
+            <id>OnARandomBox-snapshots</id>
+            <url>http://repo.onarandombox.com/content/repositories/thirdparty-dev</url>
+        </snapshotRepository>
     </distributionManagement>
 </project>
