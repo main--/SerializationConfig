@@ -13,7 +13,10 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
  * <b>IMPORTANT: Before custom types can be loaded/deserialized by Bukkit, they have to be registered
  * with {@link ConfigurationSerialization#registerClass(Class)}!
  */
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public abstract class SerializationConfig implements ConfigurationSerializable {
+    private static final InstanceCache<Serializor<?, ?>> serializorCache = new InstanceCache<Serializor<?,?>>();
+    private static final InstanceCache<Validator<?>> validatorCache = new InstanceCache<Validator<?>>();
 
     /**
      * This constructor does nothing (okay, it sets the defaults...), it's just here for
@@ -69,7 +72,6 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * that takes a {@code Map<String, Object>} and passes it to this super implementation.
      * @param values The map bukkit passes to us.
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public SerializationConfig(Map<String, Object> values) {
         this();
         Field[] fields = this.getClass().getDeclaredFields();
@@ -80,9 +82,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
                     Property propertyInfo = f.getAnnotation(Property.class);
-                    Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends Serializor<?, ?>>) propertyInfo.value();
+                    Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends Serializor<?, ?>>) propertyInfo.serializor();
                     // get the serializor from SerializorCache
-                    Serializor serializor = SerializorCache.getSerializor(serializorClass);
+                    Serializor serializor = serializorCache.getInstance(serializorClass, this);
                     // deserialize it and set the field
                     Object value = serializor.deserialize(values.get(f.getName()), f.getType());
                     if (value != null)
@@ -98,7 +100,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
     public final Map<String, Object> serialize() {
         Field[] fields = this.getClass().getDeclaredFields();
         Map<String, Object> ret = new LinkedHashMap<String, Object>();
@@ -109,9 +111,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
                     Property propertyInfo = f.getAnnotation(Property.class);
-                    Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.value();
+                    Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.serializor();
                     // get the serializor from SerializorCache
-                    Serializor serializor = SerializorCache.getSerializor(serializorClass);
+                    Serializor serializor = serializorCache.getInstance(serializorClass, this);
                     // serialize it and put it into the output-map
                     ret.put(f.getName(), serializor.serialize(f.get(this)));
                 } catch (Exception e) {
@@ -130,21 +132,60 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
      * @return True at success, false if the operation failed.
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public final boolean setProperty(String property, String value) {
         try {
-            String[] nodes = property.split("\\.");
+            String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
             if (nodes.length == 1) {
-                Field theField = this.getClass().getDeclaredField(nodes[0]);
-                theField.setAccessible(true);
-                if (!theField.isAnnotationPresent(Property.class))
-                    throw new Exception();
-                Property propertyInfo = theField.getAnnotation(Property.class);
-                Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.value();
-                Serializor serializor = SerializorCache.getSerializor(serializorClass);
-                theField.set(this, serializor.deserialize(value, theField.getType()));
-                theField.setAccessible(false);
-                return true;
+                Field field = null;
+                try {
+                    field = this.getClass().getDeclaredField(nodes[0]);
+                    field.setAccessible(true);
+                    if (field.isAnnotationPresent(Property.class)) {
+                        Property propertyInfo = field.getAnnotation(Property.class);
+                        Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends me.main__.util.SerializationConfig.Serializor<?, ?>>) propertyInfo.serializor();
+                        Serializor serializor = serializorCache.getInstance(serializorClass, this);
+                        Object oVal;
+                        try {
+                            oVal = serializor.deserialize(value, field.getType());
+                        } catch (IllegalPropertyValueException e) {
+                            return false;
+                        } catch (RuntimeException e) {
+                            // throw new IllegalPropertyValueException(e);
+                            return false;
+                        }
+                        if (VirtualProperty.class.isAssignableFrom(field.getType())) {
+                            // validate
+                            try {
+                                oVal = validate(field, propertyInfo, oVal);
+                            } catch (ChangeDeniedException e) {
+                                return false;
+                            }
+
+                            // it's virtual!
+                            VirtualProperty<Object> vProp = (VirtualProperty<Object>) field.get(this);
+                            // auto-cast FTW :D
+                            vProp.set(oVal);
+                            return true;
+                        } else {
+                            return validateAndDoChange(field, oVal);
+                        }
+                    } else {
+                        throw new MissingAnnotationException("Property");
+                    }
+                } catch (NoSuchPropertyException e) {
+                    throw e;
+                } catch (MissingAnnotationException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (NoSuchFieldException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return false;
+                } finally {
+                    if (field != null)
+                        field.setAccessible(false);
+                }
             }
             // recursion...
             String nextNode = nodes[0];
@@ -163,6 +204,39 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             // we fail sliently
         }
         return false;
+    }
+
+    private Object validate(Field field, Property propertyInfo, Object newVal) throws ReflectiveOperationException, ChangeDeniedException {
+        Validator<Object> validator = null;
+        if (propertyInfo.validator() != Validator.class) { // only if a validator was set
+            validator = validatorCache.getInstance(propertyInfo.validator(), this);
+        } else if (this.getClass().isAnnotationPresent(ValidateAllWith.class)) {
+            ValidateAllWith validAll = this.getClass().getAnnotation(ValidateAllWith.class);
+            validator = validatorCache.getInstance(validAll.value(), this);
+        }
+        if (validator != null) {
+            try {
+                newVal = validator.validateChange(field.getName(), newVal, field.get(this));
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException("Illegal validator!", e);
+            }
+        }
+        return newVal;
+    }
+
+    private <T> boolean validateAndDoChange(Field field, T newVal) throws Exception {
+        if (!field.getType().isAssignableFrom(newVal.getClass()) && !field.getType().isPrimitive()) // types don't match
+            return false;
+        Property propInfo = field.getAnnotation(Property.class);
+        try {
+            newVal = (T) validate(field, propInfo, newVal);
+        } catch (ChangeDeniedException e) {
+            return false;
+        }
+
+        field.set(this, newVal);
+
+        return true;
     }
 
     /**

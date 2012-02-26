@@ -4,6 +4,8 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 
+import me.main__.util.SerializationConfig.util.*;
+
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.After;
@@ -13,6 +15,8 @@ import org.junit.Test;
 public class SerializationConfigTest {
 
     TestConfiguration testConfig;
+
+    String lastNotification = null;
 
     @Before
     public void setUp() throws Exception {
@@ -64,8 +68,41 @@ public class SerializationConfigTest {
             assertEquals(true, testConfig.bool);
             assertEquals("new", testConfig.custom.val);
             assertEquals("new", testConfig.subConfig.val);
-        }
-        finally {
+
+            // validator-tests 1
+            assertEquals("validatorTest1", testConfig.validatorTest1);
+            assertTrue(testConfig.setProperty("validatorTest1", "awesomeValue"));
+            assertEquals("awesomeValue", testConfig.validatorTest1);
+            assertFalse(testConfig.setProperty("validatorTest1", "denyThis!"));
+            assertEquals("awesomeValue", testConfig.validatorTest1);
+            assertTrue(testConfig.setProperty("validatorTest1", "silentFail"));
+            assertEquals("awesomeValue", testConfig.validatorTest1);
+            assertTrue(testConfig.setProperty("validatorTest1", "strange...?"));
+            assertEquals("strangeValue", testConfig.validatorTest1);
+
+            // validator-tests 2
+            assertEquals("validatorTest2", testConfig.validatorTest2);
+            assertTrue(testConfig.setProperty("validatorTest2", "newValue"));
+            assertEquals("newValue", testConfig.validatorTest2);
+
+            // yet MORE validator-tests (yes, we're testing EVERYTHING here and I'm REALLY proud of that fact.)
+            TestValidator.notification = new TestValidator.Notification() {
+                @Override
+                public void call(String name) {
+                    lastNotification = name;
+                }
+            };
+            ValidateAllTestConfig vatc = new ValidateAllTestConfig();
+            assertNull(lastNotification);
+            assertEquals("propWithInheritedValidator", vatc.propWithInheritedValidator);
+            assertTrue(vatc.setProperty("propWithInheritedValidator", "newVal"));
+            assertEquals("propWithInheritedValidator", lastNotification);
+            lastNotification = null;
+            assertEquals("newVal", vatc.propWithInheritedValidator);
+            assertTrue(vatc.setProperty("propWithOverriddenValidator", "newVal"));
+            assertNull(lastNotification);
+            assertEquals("newVal", vatc.propWithOverriddenValidator);
+        } finally {
             new File("testConfig.yml").delete();
         }
     }

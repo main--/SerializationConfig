@@ -5,7 +5,7 @@ import java.io.File;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 
 /**
- * A helper class used to serialize objects.
+ * Implemented by helper classes that are used to serialize objects.
  * <p>
  *
  * @param <T> The type of the object to be serialized.
@@ -29,6 +29,7 @@ public interface Serializor<T, U> {
      * @param serialized The {@code U} to be deserialized.
      * @param wanted The {@link Class} of the object that should be returned.
      * @return The deserialized object.
+     * @throws IllegalPropertyValueException When the serialized value is invalid and cannot be deserialized.
      */
-    T deserialize(U serialized, Class<T> wanted);
+    T deserialize(U serialized, Class<T> wanted) throws IllegalPropertyValueException;
 }

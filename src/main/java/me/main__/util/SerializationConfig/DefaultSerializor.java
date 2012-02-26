@@ -13,10 +13,11 @@ import java.util.Map;
  * It fails silently.
  * @param <T> Generic type argument that does some magic. You usually won't touch this class, so just ignore it.
  */
-public final class DefaultSerializor<T> implements Serializor<T, Object> {
+final class DefaultSerializor<T> implements Serializor<T, Object> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Object serialize(Object object) {
         if (object instanceof SerializationConfig) {
             // this one is serializable itself
@@ -28,6 +29,7 @@ public final class DefaultSerializor<T> implements Serializor<T, Object> {
     /**
      * {@inheritDoc}
      */
+    @Override
     @SuppressWarnings("unchecked")
     public T deserialize(Object serialized, Class<T> anothertype) {
         try {

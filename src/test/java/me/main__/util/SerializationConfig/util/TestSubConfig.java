@@ -1,6 +1,8 @@
-package me.main__.util.SerializationConfig;
+package me.main__.util.SerializationConfig.util;
 
 import java.util.Map;
+
+import me.main__.util.SerializationConfig.*;
 
 public class TestSubConfig extends SerializationConfig {
 

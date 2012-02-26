@@ -1,4 +1,4 @@
-package me.main__.util.SerializationConfig;
+package me.main__.util.SerializationConfig.util;
 
 public class MyCustomType {
     public String val = "test";
