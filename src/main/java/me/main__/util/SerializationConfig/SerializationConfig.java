@@ -126,6 +126,97 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     }
 
     /**
+     * Sets a property.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. It will be automatically casted.
+     * @return True at success, false if the operation failed.
+     * @throws ClassCastException When the property is unable to hold {@code value}.
+     */
+    public final boolean setPropertyValue(String property, Object value) throws ClassCastException {
+        return setPropertyValue(property, value, false);
+    }
+
+    /**
+     * Sets a property.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. It will be automatically casted.
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return True at success, false if the operation failed.
+     * @throws ClassCastException When the property is unable to hold {@code value}.
+     */
+    public final boolean setPropertyValue(String property, Object value, boolean ignoreCase) throws ClassCastException {
+        try {
+            String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
+            if (nodes.length == 1) {
+                Field field = null;
+                try {
+                    field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
+                    field.setAccessible(true);
+                    if (field.isAnnotationPresent(Property.class)) {
+                        if (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().isPrimitive())
+                            throw new ClassCastException(value.getClass().toString() + " cannot be cast to " + field.getType().toString());
+
+                        Property propertyInfo = field.getAnnotation(Property.class);
+                        if (VirtualProperty.class.isAssignableFrom(field.getType())) {
+                            // validate
+                            try {
+                                value = validate(field, propertyInfo, value);
+                            } catch (ChangeDeniedException e) {
+                                return false;
+                            }
+
+                            // it's virtual!
+                            VirtualProperty<Object> vProp = (VirtualProperty<Object>) field.get(this);
+                            // auto-cast FTW :D
+                            vProp.set(value);
+                            return true;
+                        } else {
+                            return validateAndDoChange(field, value);
+                        }
+                    } else {
+                        throw new MissingAnnotationException("Property");
+                    }
+                } catch (NoSuchPropertyException e) {
+                    throw e;
+                } catch (MissingAnnotationException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (NoSuchFieldException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (ClassCastException e) {
+                    throw e;
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return false;
+                } finally {
+                    if (field != null)
+                        field.setAccessible(false);
+                }
+            }
+            // recursion...
+            String nextNode = nodes[0];
+            Field nodeField = this.getClass().getDeclaredField(nextNode);
+            nodeField.setAccessible(true);
+            if (!nodeField.isAnnotationPresent(Property.class))
+                throw new Exception();
+            SerializationConfig child = (SerializationConfig) nodeField.get(this);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i < nodes.length; i++) {
+                sb.append(nodes[i]).append('.');
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            return child.setPropertyValue(sb.toString(), value);
+        } catch (ClassCastException e) {
+            throw e;
+        } catch (Exception e) {
+            // we fail sliently
+        }
+        return false;
+    }
+
+    /**
      * Sets a property using a {@link String}.
      *
      * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
@@ -133,16 +224,28 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @return True at success, false if the operation failed.
      */
     public final boolean setProperty(String property, String value) {
+        return setProperty(property, value, false);
+    }
+
+    /**
+     * Sets a property using a {@link String}.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return True at success, false if the operation failed.
+     */
+    public final boolean setProperty(String property, String value, boolean ignoreCase) {
         try {
             String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = this.getClass().getDeclaredField(nodes[0]);
+                    field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         Property propertyInfo = field.getAnnotation(Property.class);
-                        Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends me.main__.util.SerializationConfig.Serializor<?, ?>>) propertyInfo.serializor();
+                        Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends Serializor<?, ?>>) propertyInfo.serializor();
                         Serializor serializor = serializorCache.getInstance(serializorClass, this);
                         Object oVal;
                         try {

@@ -52,7 +52,9 @@ public class SerializationConfigTest {
             assertEquals("subTest", testConfig.subConfig.val);
             testConfig.test1 = "new";
             testConfig.test2 = "new";
-            testConfig.bool = true;
+            assertFalse(testConfig.setPropertyValue("bOOl", true, false));
+            assertTrue(testConfig.setPropertyValue("bOOl", true, true));
+            assertEquals(true, testConfig.bool);
             testConfig.custom.val = "new";
             assertFalse(testConfig.setProperty("invalidproperty", "invalidvalue"));
             assertTrue(testConfig.setProperty("subConfig.val", "new"));
