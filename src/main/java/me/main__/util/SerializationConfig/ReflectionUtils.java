@@ -1,17 +1,18 @@
 package me.main__.util.SerializationConfig;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 public class ReflectionUtils {
     protected ReflectionUtils() {
         throw new UnsupportedOperationException();
     }
 
-    public static final <T> T safelyInstantiate(Class<T> clazz) throws ReflectiveOperationException {
+    public static final <T> T safelyInstantiate(Class<T> clazz) throws InstantiationException, IllegalAccessException, InvocationTargetException {
         return safelyInstantiate(clazz, null);
     }
 
-    public static final <T> T safelyInstantiate(Class<T> clazz, Object instantiator) throws ReflectiveOperationException {
+    public static final <T> T safelyInstantiate(Class<T> clazz, Object instantiator) throws InstantiationException, IllegalAccessException, InvocationTargetException {
         boolean needsInstance = false;
         Constructor<T> ctor;
         try {

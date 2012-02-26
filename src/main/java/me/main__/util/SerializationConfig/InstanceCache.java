@@ -28,7 +28,7 @@ public class InstanceCache<T> {
             // create a new one
             try {
                 u = ReflectionUtils.safelyInstantiate(clazz, instantiator);
-            } catch (ReflectiveOperationException e) {
+            } catch (Exception e) {
                 // failed? sorry, u stays null then.
             }
         }

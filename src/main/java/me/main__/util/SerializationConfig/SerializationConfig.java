@@ -206,7 +206,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         return false;
     }
 
-    private Object validate(Field field, Property propertyInfo, Object newVal) throws ReflectiveOperationException, ChangeDeniedException {
+    private Object validate(Field field, Property propertyInfo, Object newVal) throws IllegalAccessException, ChangeDeniedException {
         Validator<Object> validator = null;
         if (propertyInfo.validator() != Validator.class) { // only if a validator was set
             validator = validatorCache.getInstance(propertyInfo.validator(), this);

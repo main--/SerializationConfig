@@ -3,7 +3,7 @@ package me.main__.util.SerializationConfig;
 /**
  * Thrown when an annotation is missing.
  */
-public class MissingAnnotationException extends ReflectiveOperationException {
+public class MissingAnnotationException extends Exception {
     private static final long serialVersionUID = 1L;
 
     public MissingAnnotationException() {
