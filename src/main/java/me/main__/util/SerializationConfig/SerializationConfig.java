@@ -67,6 +67,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * This is the constructor used by Bukkit to deserialize the object.
      * Yep, this does the actual deserialization-work so make sure to have a constructor
      * that takes a {@code Map<String, Object>} and passes it to this super implementation.
+     * @param values The map bukkit passes to us.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public SerializationConfig(Map<String, Object> values) {

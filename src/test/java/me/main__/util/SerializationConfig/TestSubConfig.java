@@ -15,8 +15,8 @@ public class TestSubConfig extends SerializationConfig {
         super(values);
     }
 
+    @Override
     public void setDefaults() {
         val = "subTest";
     }
-
 }

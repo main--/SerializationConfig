@@ -11,6 +11,7 @@ import java.util.Map;
  * {@code Map<String, Object>}, if the object is a {@link SerializationConfig}.
  * <p>
  * It fails silently.
+ * @param <T> Generic type argument that does some magic. You usually won't touch this class, so just ignore it.
  */
 public final class DefaultSerializor<T> implements Serializor<T, Object> {
     /**
@@ -55,7 +56,7 @@ public final class DefaultSerializor<T> implements Serializor<T, Object> {
         }
     }
 
-    /**
+    /*
      * Somebody might want this one... for whatever reasons.
      */
     public static final Map<Class<?>, Class<?>> getPrimitiveToWrapperMap() {

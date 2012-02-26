@@ -8,7 +8,6 @@ public class SerializorCache {
     private static final Map<Class<? extends Serializor<?, ?>>, Serializor<?, ?>> serializorCache
             = new HashMap<Class<? extends Serializor<?, ?>>, Serializor<?, ?>>();
 
-    @SuppressWarnings("unchecked")
     public static void cacheSerializor(Serializor<?, ?> serializor) {
         serializorCache.put((Class<? extends Serializor<?, ?>>) serializor.getClass(), serializor);
     }
