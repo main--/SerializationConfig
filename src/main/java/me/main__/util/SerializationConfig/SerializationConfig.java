@@ -77,7 +77,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         Field[] fields = this.getClass().getDeclaredFields();
         for (Field f : fields) {
             f.setAccessible(true);
-            if (f.isAnnotationPresent(Property.class)) {
+            if (f.isAnnotationPresent(Property.class) && !VirtualProperty.class.isAssignableFrom(f.getType())) {
                 try {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
@@ -106,7 +106,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         Map<String, Object> ret = new LinkedHashMap<String, Object>();
         for (Field f : fields) {
             f.setAccessible(true);
-            if (f.isAnnotationPresent(Property.class)) {
+            if (f.isAnnotationPresent(Property.class) && !VirtualProperty.class.isAssignableFrom(f.getType())) {
                 try {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
