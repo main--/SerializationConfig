@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
+
 /**
  * A default {@link Serializor}-implementation that tries to serialize an object to a string or a
  * {@code Map<String, Object>}, if the object is a {@link SerializationConfig}.
@@ -19,8 +22,8 @@ final class DefaultSerializor<T> implements Serializor<T, Object> {
      */
     @Override
     public Object serialize(Object object) {
-        if (object instanceof SerializationConfig) {
-            // this one is serializable itself
+        if ((object instanceof ConfigurationSerializable) || (object instanceof Iterable)) {
+            // The YAML-Parser/Bukkit will handle it
             return object;
         }
         return String.valueOf(object);
@@ -42,6 +45,12 @@ final class DefaultSerializor<T> implements Serializor<T, Object> {
                 // now we need the deserialization-constructor
                 Constructor<T> ctor = anothertype.getConstructor(Map.class);
                 return ctor.newInstance(serMap);
+            } else if (ConfigurationSerializable.class.isAssignableFrom(anothertype)) {
+                // bukkit...? help...?
+                return (T) ConfigurationSerialization.deserializeObject((Map<String,Object>) serialized,
+                        (Class<? extends ConfigurationSerializable>) anothertype);
+            } else if (Iterable.class.isAssignableFrom(anothertype) && (serialized instanceof Iterable)) {
+                return (T) serialized;
             }
 
             Class<?> type;

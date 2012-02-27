@@ -3,6 +3,7 @@ package me.main__.util.SerializationConfig;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.util.Arrays;
 
 import me.main__.util.SerializationConfig.util.*;
 
@@ -49,12 +50,14 @@ public class SerializationConfigTest {
             assertEquals("test2", testConfig.test2);
             assertEquals("awesome", testConfig.custom.val);
             assertEquals(false, testConfig.bool);
+            assertEquals(Arrays.asList("defaultEntry"), testConfig.stringList);
             assertEquals("subTest", testConfig.subConfig.val);
             testConfig.test1 = "new";
             testConfig.test2 = "new";
             assertFalse(testConfig.setPropertyValue("bOOl", true, false));
             assertTrue(testConfig.setPropertyValue("bOOl", true, true));
             assertEquals(true, testConfig.bool);
+            testConfig.stringList.add("new");
             testConfig.custom.val = "new";
             assertFalse(testConfig.setProperty("invalidproperty", "invalidvalue"));
             assertTrue(testConfig.setProperty("subConfig.val", "new"));
@@ -68,6 +71,7 @@ public class SerializationConfigTest {
             assertEquals("new", testConfig.test1);
             assertEquals("test2", testConfig.test2);
             assertEquals(true, testConfig.bool);
+            assertEquals(Arrays.asList("defaultEntry", "new"), testConfig.stringList);
             assertEquals("new", testConfig.custom.val);
             assertEquals("new", testConfig.subConfig.val);
 

@@ -1,5 +1,7 @@
 package me.main__.util.SerializationConfig.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import me.main__.util.SerializationConfig.*;
@@ -48,6 +50,10 @@ public class TestConfiguration extends SerializationConfig {
     @Property
     public boolean bool;
 
+    // Iterables work
+    @Property
+    public List<String> stringList;
+
     // custom serializors work
     @Property(serializor = MyCustomSerializor.class)
     public MyCustomType custom;
@@ -73,6 +79,9 @@ public class TestConfiguration extends SerializationConfig {
         validatorTest2 = "validatorTest2";
 
         bool = false;
+
+        stringList = new ArrayList<String>();
+        stringList.add("defaultEntry");
 
         custom = new MyCustomType();
         custom.val = "awesome";
