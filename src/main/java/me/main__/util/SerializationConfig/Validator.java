@@ -4,6 +4,7 @@ package me.main__.util.SerializationConfig;
  * Implemented by helper classes that are used to validate property-changes.
  *
  * @param <T> The type of the property whose changes should be validated.
+ * @see ObjectUsingValidator
  */
 public interface Validator<T> {
     /**

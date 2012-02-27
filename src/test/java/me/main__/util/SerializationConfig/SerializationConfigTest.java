@@ -17,7 +17,8 @@ public class SerializationConfigTest {
 
     TestConfiguration testConfig;
 
-    String lastNotification = null;
+    String lastNotificationProperty = null;
+    Object lastNotificationCaller = null;
 
     @Before
     public void setUp() throws Exception {
@@ -94,19 +95,24 @@ public class SerializationConfigTest {
             // yet MORE validator-tests (yes, we're testing EVERYTHING here and I'm REALLY proud of that fact.)
             TestValidator.notification = new TestValidator.Notification() {
                 @Override
-                public void call(String name) {
-                    lastNotification = name;
+                public void call(String name, Object caller) {
+                    lastNotificationProperty = name;
+                    lastNotificationCaller = caller;
                 }
             };
             ValidateAllTestConfig vatc = new ValidateAllTestConfig();
-            assertNull(lastNotification);
+            assertNull(lastNotificationProperty);
+            assertNull(lastNotificationCaller);
             assertEquals("propWithInheritedValidator", vatc.propWithInheritedValidator);
             assertTrue(vatc.setProperty("propWithInheritedValidator", "newVal"));
-            assertEquals("propWithInheritedValidator", lastNotification);
-            lastNotification = null;
+            assertEquals("propWithInheritedValidator", lastNotificationProperty);
+            assertSame(vatc, lastNotificationCaller);
+            lastNotificationProperty = null;
+            lastNotificationCaller = null;
             assertEquals("newVal", vatc.propWithInheritedValidator);
             assertTrue(vatc.setProperty("propWithOverriddenValidator", "newVal"));
-            assertNull(lastNotification);
+            assertNull(lastNotificationProperty);
+            assertNull(lastNotificationCaller);
             assertEquals("newVal", vatc.propWithOverriddenValidator);
         } finally {
             new File("testConfig.yml").delete();

@@ -319,7 +319,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         }
         if (validator != null) {
             try {
-                newVal = validator.validateChange(field.getName(), newVal, field.get(this));
+                if (validator instanceof ObjectUsingValidator)
+                    newVal = ((ObjectUsingValidator) validator).validateChange(field.getName(), newVal, field.get(this), this);
+                else
+                    newVal = validator.validateChange(field.getName(), newVal, field.get(this));
             } catch (ClassCastException e) {
                 throw new IllegalArgumentException("Illegal validator!", e);
             }
