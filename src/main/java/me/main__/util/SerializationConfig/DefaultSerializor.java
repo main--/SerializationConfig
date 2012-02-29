@@ -34,7 +34,7 @@ final class DefaultSerializor<T> implements Serializor<T, Object> {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public T deserialize(Object serialized, Class<T> anothertype) {
+    public T deserialize(Object serialized, Class<T> anothertype) throws IllegalPropertyValueException {
         try {
             if (String.class.isAssignableFrom(anothertype))
                 return (T) serialized;
@@ -63,7 +63,7 @@ final class DefaultSerializor<T> implements Serializor<T, Object> {
             Method valueOf = type.getMethod("valueOf", String.class);
             return (T) valueOf.invoke(null, serialized);
         } catch (Exception e) {
-            return null;
+            throw new IllegalPropertyValueException(e);
         }
     }
 

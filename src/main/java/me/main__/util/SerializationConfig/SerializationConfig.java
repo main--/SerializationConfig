@@ -155,7 +155,8 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
-                        if (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().isPrimitive())
+                        if (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().isPrimitive()
+                                && !VirtualProperty.class.isAssignableFrom(field.getType()))
                             throw new ClassCastException(value.getClass().toString() + " cannot be cast to " + field.getType().toString());
 
                         Property propertyInfo = field.getAnnotation(Property.class);
@@ -195,7 +196,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = this.getClass().getDeclaredField(nextNode);
+            Field nodeField = ReflectionUtils.getField(nextNode, this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -288,7 +289,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = this.getClass().getDeclaredField(nextNode);
+            Field nodeField = ReflectionUtils.getField(nextNode, this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
