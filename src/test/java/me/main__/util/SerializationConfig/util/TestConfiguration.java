@@ -1,6 +1,7 @@
 package me.main__.util.SerializationConfig.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +37,15 @@ public class TestConfiguration extends SerializationConfig {
         }
     }
 
+    private final class ParentValidator implements Validator<TestSubConfig> {
+        @Override
+        public TestSubConfig validateChange(String property, TestSubConfig newValue,
+                TestSubConfig oldValue) throws ChangeDeniedException {
+            subChange = true;
+            return newValue;
+        }
+    }
+
     @Property
     public String test1;
     // values without the annotation won't be serialized
@@ -59,8 +69,9 @@ public class TestConfiguration extends SerializationConfig {
     public MyCustomType custom;
 
     // the default serializor supports SerializationConfigs
-    @Property
+    @Property(validator = ParentValidator.class)
     public TestSubConfig subConfig;
+    public boolean subChange = false;
 
     public TestConfiguration() {
         super();
@@ -87,5 +98,11 @@ public class TestConfiguration extends SerializationConfig {
         custom.val = "awesome";
 
         subConfig = new TestSubConfig();
+    }
+
+    protected static Map<String, String> getAliases() {
+        Map<String, String> aliases = new HashMap<String, String>();
+        aliases.put("firstTest", "test1");
+        return aliases;
     }
 }

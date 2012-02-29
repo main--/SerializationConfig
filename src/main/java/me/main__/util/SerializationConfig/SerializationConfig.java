@@ -1,8 +1,11 @@
 package me.main__.util.SerializationConfig;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -11,12 +14,78 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
  * An abstract class that can be extended to create a type that can easily be stored in the Bukkit config.
  * <p>
  * <b>IMPORTANT: Before custom types can be loaded/deserialized by Bukkit, they have to be registered
- * with {@link ConfigurationSerialization#registerClass(Class)}!
+ * with {@link ConfigurationSerialization#registerClass(Class)}!</b>
+ * <p>
+ * You may create {@code protected static Map<String, String> getAliases()} to easily define aliases.
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public abstract class SerializationConfig implements ConfigurationSerializable {
     private static final InstanceCache<Serializor<?, ?>> serializorCache = new InstanceCache<Serializor<?,?>>();
     private static final InstanceCache<Validator<?>> validatorCache = new InstanceCache<Validator<?>>();
+
+    private static final Map<Class<? extends SerializationConfig>, Map<String, String>> aliasMap =
+            new WeakHashMap<Class<? extends SerializationConfig>, Map<String,String>>();
+
+    /**
+     * Registers an alias.
+     * <p>
+     * If the alias given here is later used as property-name in the
+     * other methods, I automatically know what you want to tell me :D
+     *
+     * @param clazz The class extending {@link SerializationConfig} the alias should be registered for.
+     * @param alias The alias.
+     * @param property The property's "real" name.
+     */
+    public static void registerAlias(Class<? extends SerializationConfig> clazz, String alias, String property) {
+        Map<String, String> myAliasMap = getAliasMap(clazz);
+        myAliasMap.put(alias, property);
+    }
+
+    /**
+     * Gets the alias-map for a class using {@link SerializationConfig}.
+     * @param clazz The class.
+     * @return The alias-map.
+     */
+    public static Map<String, String> getAliasMap(Class<? extends SerializationConfig> clazz) {
+        if (!aliasMap.containsKey(clazz)) {
+            Map<String, String> defaultMap;
+            // let's try to get it with the static getAliases()-method:
+            Method defaultsMethod = null;
+            try {
+                defaultsMethod = clazz.getDeclaredMethod("getAliases");
+                defaultsMethod.setAccessible(true);
+                defaultMap = (Map<String, String>) defaultsMethod.invoke(null);
+            } catch (Exception e) {
+                defaultMap = null;
+            } finally {
+                if (defaultsMethod != null)
+                    defaultsMethod.setAccessible(false);
+            }
+            if (defaultMap == null)
+                defaultMap = new HashMap<String, String>();
+
+            aliasMap.put(clazz, defaultMap);
+        }
+        return aliasMap.get(clazz);
+    }
+
+    /**
+     * Registers an alias.
+     *
+     * @param alias The alias.
+     * @param property The property's "real" name.
+     */
+    protected final void registerAlias(String alias, String property) {
+        registerAlias(this.getClass(), alias, property);
+    }
+
+    /**
+     * Gets our alias-map.
+     * @return The alias-map.
+     */
+    protected final Map<String, String> getAliasMap() {
+        return getAliasMap(this.getClass());
+    }
 
     /**
      * This constructor does nothing (okay, it sets the defaults...), it's just here for
@@ -125,6 +194,13 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         return ret;
     }
 
+    private String fixupName(String name) {
+        if (getAliasMap().containsKey(name))
+            return getAliasMap().get(name);
+        else
+            return name;
+    }
+
     /**
      * Sets a property.
      *
@@ -152,7 +228,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         if (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().isPrimitive()
@@ -196,7 +272,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(nextNode, this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -206,7 +282,24 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 sb.append(nodes[i]).append('.');
             }
             sb.deleteCharAt(sb.length() - 1);
-            return child.setPropertyValue(sb.toString(), value, ignoreCase);
+
+            Exception ex = null;
+            boolean ret;
+            try {
+                ret = child.setPropertyValue(sb.toString(), value, ignoreCase);
+            } catch (Exception e) {
+                ex = e;
+                ret = false;
+            }
+            // call validator...
+            try {
+                validate(nodeField, nodeField.getAnnotation(Property.class), child);
+            } catch (Exception e) {
+                // we just ignore what he says, however
+            }
+            if (ex != null)
+                throw ex;
+            return ret;
         } catch (ClassCastException e) {
             throw e;
         } catch (Exception e) {
@@ -240,7 +333,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         Property propertyInfo = field.getAnnotation(Property.class);
@@ -289,7 +382,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(nextNode, this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -299,11 +392,132 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 sb.append(nodes[i]).append('.');
             }
             sb.deleteCharAt(sb.length() - 1);
-            return child.setProperty(sb.toString(), value, ignoreCase);
+
+            Exception ex = null;
+            boolean ret;
+            try {
+                ret = child.setProperty(sb.toString(), value, ignoreCase);
+            } catch (Exception e) {
+                ex = e;
+                ret = false;
+            }
+            // call validator...
+            try {
+                validate(nodeField, nodeField.getAnnotation(Property.class), child);
+            } catch (Exception e) {
+                // we just ignore what he says, however
+            }
+            if (ex != null)
+                throw ex;
+            return ret;
         } catch (Exception e) {
             // we fail sliently
         }
         return false;
+    }
+
+    /**
+     * Gets a property's value as {@link String}.
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @return The property's value.
+     * @throws NoSuchPropertyException When the property was not found.
+     */
+    public final String getProperty(String property) throws NoSuchPropertyException {
+        return getProperty(property, false);
+    }
+
+    /**
+     * Gets a property's value as {@link String}.
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return The property's value.
+     * @throws NoSuchPropertyException When the property was not found.
+     */
+    public final String getProperty(String property, boolean ignoreCase) throws NoSuchPropertyException {
+        try {
+            String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
+            if (nodes.length == 1) {
+                Field field = null;
+                try {
+                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
+                    field.setAccessible(true);
+                    if (field.isAnnotationPresent(Property.class)) {
+                        Property propertyInfo = field.getAnnotation(Property.class);
+                        Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends Serializor<?, ?>>) propertyInfo.serializor();
+                        Serializor serializor = serializorCache.getInstance(serializorClass, this);
+                        Object rawValue;
+                        if (VirtualProperty.class.isAssignableFrom(field.getType())) {
+                            // it's virtual!
+                            VirtualProperty<Object> vProp = (VirtualProperty<Object>) field.get(this);
+                            rawValue = vProp.get();
+                        } else {
+                            rawValue = field.get(this);
+                        }
+                        Object serialized = serializor.serialize(rawValue);
+                        return serialized.toString();
+                    } else {
+                        throw new MissingAnnotationException("Property");
+                    }
+                } catch (MissingAnnotationException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (NoSuchFieldException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (Exception e) {
+                    throw e;
+                } finally {
+                    if (field != null)
+                        field.setAccessible(false);
+                }
+            }
+            // recursion...
+            String nextNode = nodes[0];
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
+            nodeField.setAccessible(true);
+            if (!nodeField.isAnnotationPresent(Property.class))
+                throw new Exception();
+            SerializationConfig child = (SerializationConfig) nodeField.get(this);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i < nodes.length; i++) {
+                sb.append(nodes[i]).append('.');
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            return child.getProperty(sb.toString(), ignoreCase);
+        } catch (NoSuchPropertyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected exception in getProperty(String, boolean)!", e);
+        }
+    }
+
+    /**
+     * We trust you, so you're allowed to use this awesome method that throws an
+     * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
+     *
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @return The property's value.
+     */
+    protected final String getPropertyUnchecked(String property) {
+        try {
+            return getProperty(property);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * We trust you, so you're allowed to use this awesome method that throws an
+     * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
+     *
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return The property's value.
+     */
+    protected final String getPropertyUnchecked(String property, boolean ignoreCase) {
+        try {
+            return getProperty(property, ignoreCase);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Object validate(Field field, Property propertyInfo, Object newVal) throws IllegalAccessException, ChangeDeniedException {

@@ -53,7 +53,8 @@ public class SerializationConfigTest {
             assertEquals(false, testConfig.bool);
             assertEquals(Arrays.asList("defaultEntry"), testConfig.stringList);
             assertEquals("subTest", testConfig.subConfig.val);
-            testConfig.test1 = "new";
+            assertTrue(testConfig.setPropertyValue("firstTest", "new")); // alias test
+            assertEquals("new", testConfig.test1);
             testConfig.test2 = "new";
             assertFalse(testConfig.setPropertyValue("bOOl", true, false));
             assertTrue(testConfig.setPropertyValue("bOOl", true, true));
@@ -61,8 +62,10 @@ public class SerializationConfigTest {
             testConfig.stringList.add("new");
             testConfig.custom.val = "new";
             assertFalse(testConfig.setProperty("invalidproperty", "invalidvalue"));
+            assertEquals(false, testConfig.subChange);
             assertTrue(testConfig.setProperty("subConfig.val", "new"));
             assertEquals("new", testConfig.subConfig.val);
+            assertEquals(true, testConfig.subChange);
             config2.set("testobject", testConfig);
             config2.save(configFile);
 
@@ -70,11 +73,19 @@ public class SerializationConfigTest {
             FileConfiguration config3 = YamlConfiguration.loadConfiguration(configFile);
             testConfig = (TestConfiguration) config3.get("testobject");
             assertEquals("new", testConfig.test1);
-            assertEquals("test2", testConfig.test2);
+            assertEquals("test2", testConfig.test2); // no annotation ==> didn't save
             assertEquals(true, testConfig.bool);
             assertEquals(Arrays.asList("defaultEntry", "new"), testConfig.stringList);
             assertEquals("new", testConfig.custom.val);
             assertEquals("new", testConfig.subConfig.val);
+
+            // test getProperty()
+            assertEquals("true", testConfig.getProperty("bool"));
+            try {
+                testConfig.getProperty("invalidproperty");
+                fail("getProperty() is supposed to throw if a property doesn't exist!");
+            } catch (Exception e) {
+            }
 
             // validator-tests 1
             assertEquals("validatorTest1", testConfig.validatorTest1);
