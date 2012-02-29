@@ -207,7 +207,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 sb.append(nodes[i]).append('.');
             }
             sb.deleteCharAt(sb.length() - 1);
-            return child.setPropertyValue(sb.toString(), value);
+            return child.setPropertyValue(sb.toString(), value, ignoreCase);
         } catch (ClassCastException e) {
             throw e;
         } catch (Exception e) {
@@ -302,7 +302,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 sb.append(nodes[i]).append('.');
             }
             sb.deleteCharAt(sb.length() - 1);
-            return child.setProperty(sb.toString(), value);
+            return child.setProperty(sb.toString(), value, ignoreCase);
         } catch (Exception e) {
             // we fail sliently
         }
