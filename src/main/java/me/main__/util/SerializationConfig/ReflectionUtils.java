@@ -18,7 +18,7 @@ public class ReflectionUtils {
         } else {
             return clazz.getDeclaredField(fieldName);
         }
-        throw new NoSuchFieldException();
+        throw new NoSuchFieldException(fieldName);
     }
 
     public static final <T> T safelyInstantiate(Class<T> clazz) throws InstantiationException, IllegalAccessException, InvocationTargetException {
