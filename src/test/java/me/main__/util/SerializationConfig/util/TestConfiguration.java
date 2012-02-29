@@ -71,7 +71,7 @@ public class TestConfiguration extends SerializationConfig {
     }
 
     @Override
-    public void setDefaults() {
+    protected void setDefaults() {
         test1 = "test1";
         test2 = "test2";
 

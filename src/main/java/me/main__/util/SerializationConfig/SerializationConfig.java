@@ -346,5 +346,5 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * <p>
      * <b>IMPORTANT: All properties have to be initialized HERE, never in/before the constructor!</b>
      */
-    public abstract void setDefaults();
+    protected abstract void setDefaults();
 }

@@ -34,7 +34,7 @@ public class ValidateAllTestConfig extends SerializationConfig {
      * {@inheritDoc}
      */
     @Override
-    public void setDefaults() {
+    protected void setDefaults() {
         propWithInheritedValidator = "propWithInheritedValidator";
         propWithOverriddenValidator = "propWithOverriddenValidator";
     }
