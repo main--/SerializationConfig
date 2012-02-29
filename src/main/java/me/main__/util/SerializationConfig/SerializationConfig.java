@@ -178,8 +178,6 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     } else {
                         throw new MissingAnnotationException("Property");
                     }
-                } catch (NoSuchPropertyException e) {
-                    throw e;
                 } catch (MissingAnnotationException e) {
                     throw new NoSuchPropertyException(e);
                 } catch (NoSuchFieldException e) {
@@ -275,8 +273,6 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     } else {
                         throw new MissingAnnotationException("Property");
                     }
-                } catch (NoSuchPropertyException e) {
-                    throw e;
                 } catch (MissingAnnotationException e) {
                     throw new NoSuchPropertyException(e);
                 } catch (NoSuchFieldException e) {
