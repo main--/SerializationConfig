@@ -500,6 +500,70 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     }
 
     /**
+     * Gets a property's description.
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @return The property's description.
+     * @throws NoSuchPropertyException When the property was not found.
+     * @see #getPropertyUnchecked(String)
+     */
+    public final String getPropertyDescription(String property) throws NoSuchPropertyException {
+        return getPropertyDescription(property, false);
+    }
+
+    /**
+     * Gets a property's description.
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return The property's description.
+     * @throws NoSuchPropertyException When the property was not found.
+     * @see #getPropertyDescriptionUnchecked(String, boolean)
+     */
+    public final String getPropertyDescription(String property, boolean ignoreCase) throws NoSuchPropertyException {
+        try {
+            String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
+            if (nodes.length == 1) {
+                Field field = null;
+                try {
+                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
+                    field.setAccessible(true);
+                    if (field.isAnnotationPresent(Property.class)) {
+                        Property propertyInfo = field.getAnnotation(Property.class);
+                        return propertyInfo.description();
+                    } else {
+                        throw new MissingAnnotationException("Property");
+                    }
+                } catch (MissingAnnotationException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (NoSuchFieldException e) {
+                    throw new NoSuchPropertyException(e);
+                } catch (Exception e) {
+                    throw e;
+                } finally {
+                    if (field != null)
+                        field.setAccessible(false);
+                }
+            }
+            // recursion...
+            String nextNode = nodes[0];
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
+            nodeField.setAccessible(true);
+            if (!nodeField.isAnnotationPresent(Property.class))
+                throw new Exception();
+            SerializationConfig child = (SerializationConfig) nodeField.get(this);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i < nodes.length; i++) {
+                sb.append(nodes[i]).append('.');
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            return child.getProperty(sb.toString(), ignoreCase);
+        } catch (NoSuchPropertyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected exception in getPropertyDescription(String, boolean)!", e);
+        }
+    }
+
+    /**
      * We trust you, so you're allowed to use this awesome method that throws an
      * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
      *
@@ -595,6 +659,39 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     protected final String getPropertyUnchecked(String property, boolean ignoreCase) {
         try {
             return this.getProperty(property, ignoreCase);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * We trust you, so you're allowed to use this awesome method that throws an
+     * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
+     *
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @return The property's description.
+     * @see #getProperty(String, boolean)
+     */
+    protected final String getPropertyDescriptionUnchecked(String property) {
+        try {
+            return getPropertyDescription(property);
+        } catch (NoSuchPropertyException e) {
+           throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * We trust you, so you're allowed to use this awesome method that throws an
+     * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
+     *
+     * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return The property's description.
+     * @see #getProperty(String, boolean)
+     */
+    protected final String getPropertyDescriptionUnchecked(String property, boolean ignoreCase) {
+        try {
+            return getPropertyDescription(property, ignoreCase);
         } catch (NoSuchPropertyException e) {
             throw new RuntimeException(e);
         }

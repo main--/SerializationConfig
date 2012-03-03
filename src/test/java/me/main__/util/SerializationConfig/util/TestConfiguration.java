@@ -46,7 +46,7 @@ public class TestConfiguration extends SerializationConfig {
         }
     }
 
-    @Property
+    @Property(description = "test1-description")
     public String test1;
     // values without the annotation won't be serialized
     public String test2;

@@ -29,4 +29,10 @@ public @interface Property {
      */
     @SuppressWarnings("rawtypes")
     Class<? extends Validator> validator() default Validator.class;
+
+    /**
+     * A description for this property.
+     * @return A description for this property.
+     */
+    String description() default "<no description set>";
 }

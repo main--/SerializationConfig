@@ -138,6 +138,9 @@ public class SerializationConfigTest {
             assertNull(lastNotificationProperty);
             assertNull(lastNotificationCaller);
             assertEquals("newVal", vatc.propWithOverriddenValidator);
+
+            // description-test
+            assertEquals("test1-description", testConfig.getPropertyDescription("test1"));
         } finally {
             new File("testConfig.yml").delete();
         }
