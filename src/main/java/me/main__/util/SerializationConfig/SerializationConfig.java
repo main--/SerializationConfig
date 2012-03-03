@@ -106,7 +106,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             f.setAccessible(true);
             if (f.isAnnotationPresent(Property.class)) {
                 Class<?> fieldclazz = f.getType();
-                if (ConfigurationSerializable.class.isAssignableFrom(fieldclazz)) {
+                if (SerializationConfig.class.isAssignableFrom(fieldclazz)) {
+                    Class<? extends SerializationConfig> subclass = fieldclazz.asSubclass(SerializationConfig.class);
+                    SerializationConfig.registerAll(subclass);
+                } else if (ConfigurationSerializable.class.isAssignableFrom(fieldclazz)) {
                     Class<? extends ConfigurationSerializable> subclass = fieldclazz.asSubclass(ConfigurationSerializable.class);
                     ConfigurationSerialization.registerClass(subclass);
                 }
