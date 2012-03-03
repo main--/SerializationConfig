@@ -59,6 +59,8 @@ public class TestConfiguration extends SerializationConfig {
     // primitives can be serialized
     @Property
     public boolean bool;
+    @Property
+    public int integer;
 
     // Iterables work
     @Property
@@ -90,6 +92,7 @@ public class TestConfiguration extends SerializationConfig {
         validatorTest2 = "validatorTest2";
 
         bool = false;
+        integer = 0;
 
         stringList = new ArrayList<String>();
         stringList.add("defaultEntry");

@@ -208,8 +208,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param value The new value for the property. It will be automatically casted.
      * @return True at success, false if the operation failed.
      * @throws ClassCastException When the property is unable to hold {@code value}.
+     * @throws NoSuchPropertyException When the property was not found.
+     * @see #setPropertyValueUnchecked(String, Object)
      */
-    public final boolean setPropertyValue(String property, Object value) throws ClassCastException {
+    public final boolean setPropertyValue(String property, Object value) throws ClassCastException, NoSuchPropertyException {
         return setPropertyValue(property, value, false);
     }
 
@@ -221,8 +223,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param ignoreCase Whether we should ignore case while searching.
      * @return True at success, false if the operation failed.
      * @throws ClassCastException When the property is unable to hold {@code value}.
+     * @throws NoSuchPropertyException When the property was not found.
+     * @see #setPropertyValueUnchecked(String, Object, boolean)
      */
-    public final boolean setPropertyValue(String property, Object value, boolean ignoreCase) throws ClassCastException {
+    public final boolean setPropertyValue(String property, Object value, boolean ignoreCase) throws ClassCastException, NoSuchPropertyException {
         try {
             String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
             if (nodes.length == 1) {
@@ -262,8 +266,6 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 } catch (ClassCastException e) {
                     throw e;
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
                     return false;
                 } finally {
                     if (field != null)
@@ -302,6 +304,8 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             return ret;
         } catch (ClassCastException e) {
             throw e;
+        } catch (NoSuchPropertyException e) {
+            throw e;
         } catch (Exception e) {
             // we fail sliently
         }
@@ -314,8 +318,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
      * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
      * @return True at success, false if the operation failed.
+     * @throws NoSuchPropertyException When the property was not found.
+     * @see #setPropertyUnchecked(String, String)
      */
-    public final boolean setProperty(String property, String value) {
+    public final boolean setProperty(String property, String value) throws NoSuchPropertyException {
         return setProperty(property, value, false);
     }
 
@@ -326,8 +332,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
      * @param ignoreCase Whether we should ignore case while searching.
      * @return True at success, false if the operation failed.
+     * @throws NoSuchPropertyException When the property was not found.
+     * @see #setPropertyUnchecked(String, String, boolean)
      */
-    public final boolean setProperty(String property, String value, boolean ignoreCase) {
+    public final boolean setProperty(String property, String value, boolean ignoreCase) throws NoSuchPropertyException {
         try {
             String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
             if (nodes.length == 1) {
@@ -372,8 +380,6 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 } catch (NoSuchFieldException e) {
                     throw new NoSuchPropertyException(e);
                 } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
                     return false;
                 } finally {
                     if (field != null)
@@ -410,6 +416,8 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (ex != null)
                 throw ex;
             return ret;
+        } catch (NoSuchPropertyException e) {
+            throw e;
         } catch (Exception e) {
             // we fail sliently
         }
@@ -421,6 +429,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
      * @return The property's value.
      * @throws NoSuchPropertyException When the property was not found.
+     * @see #getPropertyUnchecked(String)
      */
     public final String getProperty(String property) throws NoSuchPropertyException {
         return getProperty(property, false);
@@ -432,6 +441,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param ignoreCase Whether we should ignore case while searching.
      * @return The property's value.
      * @throws NoSuchPropertyException When the property was not found.
+     * @see #getPropertyUnchecked(String, boolean)
      */
     public final String getProperty(String property, boolean ignoreCase) throws NoSuchPropertyException {
         try {
@@ -493,12 +503,81 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * We trust you, so you're allowed to use this awesome method that throws an
      * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
      *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. It will be automatically casted.
+     * @return True at success, false if the operation failed.
+     * @see #setPropertyValue(String, Object)
+     */
+    protected final boolean setPropertyValueUnchecked(String property, Object value) {
+        try {
+            return this.setPropertyValue(property, value);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * We trust you, so you're allowed to use this awesome method that throws an
+     * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. It will be automatically casted.
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return True at success, false if the operation failed.
+     * @see #setPropertyValue(String, Object, boolean)
+     */
+    protected final boolean setPropertyValueUnchecked(String property, Object value, boolean ignoreCase) {
+        try {
+            return this.setPropertyValue(property, value, ignoreCase);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Sets a property using a {@link String}.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
+     * @return True at success, false if the operation failed.
+     * @see #setProperty(String, String)
+     */
+    protected final boolean setPropertyUnchecked(String property, String value) {
+        try {
+            return this.setProperty(property, value);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Sets a property using a {@link String}.
+     *
+     * @param property The name of the property. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
+     * @param value The new value for the property. Only works if the {@link Serializor} supports deserialization from a {@link String}.
+     * @param ignoreCase Whether we should ignore case while searching.
+     * @return True at success, false if the operation failed.
+     * @see #setProperty(String, String, boolean)
+     */
+    protected final boolean setPropertyUnchecked(String property, String value, boolean ignoreCase) {
+        try {
+            return this.setProperty(property, value, ignoreCase);
+        } catch (NoSuchPropertyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * We trust you, so you're allowed to use this awesome method that throws an
+     * <b>unchecked</b> {@link RuntimeException} instead of the usual <b>checked</b> {@link NoSuchPropertyException}.
+     *
      * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
      * @return The property's value.
+     * @see #getProperty(String)
      */
     protected final String getPropertyUnchecked(String property) {
         try {
-            return getProperty(property);
+            return this.getProperty(property);
         } catch (NoSuchPropertyException e) {
             throw new RuntimeException(e);
         }
@@ -511,10 +590,11 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @param property The property's name. You can specify paths to subconfigs with '.'. Example: 'childconfig.value'
      * @param ignoreCase Whether we should ignore case while searching.
      * @return The property's value.
+     * @see #getProperty(String, boolean)
      */
     protected final String getPropertyUnchecked(String property, boolean ignoreCase) {
         try {
-            return getProperty(property, ignoreCase);
+            return this.getProperty(property, ignoreCase);
         } catch (NoSuchPropertyException e) {
             throw new RuntimeException(e);
         }

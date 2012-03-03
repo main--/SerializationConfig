@@ -51,17 +51,29 @@ public class SerializationConfigTest {
             assertEquals("test2", testConfig.test2);
             assertEquals("awesome", testConfig.custom.val);
             assertEquals(false, testConfig.bool);
+            assertEquals(0, testConfig.integer);
             assertEquals(Arrays.asList("defaultEntry"), testConfig.stringList);
             assertEquals("subTest", testConfig.subConfig.val);
             assertTrue(testConfig.setPropertyValue("firstTest", "new")); // alias test
             assertEquals("new", testConfig.test1);
             testConfig.test2 = "new";
-            assertFalse(testConfig.setPropertyValue("bOOl", true, false));
+            try {
+                testConfig.setPropertyValue("bOOl", true, false);
+                fail("setPropertyValue() is supposed to throw when the property doesn't exist!");
+            } catch (NoSuchPropertyException e1) {
+            }
+            assertFalse(testConfig.setPropertyValue("bOOl", "aString", true));
             assertTrue(testConfig.setPropertyValue("bOOl", true, true));
             assertEquals(true, testConfig.bool);
+            assertFalse(testConfig.setProperty("integer", "text"));
+            assertTrue(testConfig.setProperty("integer", "1"));
             testConfig.stringList.add("new");
             testConfig.custom.val = "new";
-            assertFalse(testConfig.setProperty("invalidproperty", "invalidvalue"));
+            try {
+                testConfig.setProperty("invalidproperty", "invalidvalue");
+                fail("setProperty() is supposed to throw when the property doesn't exist!");
+            } catch (NoSuchPropertyException e1) {
+            }
             assertEquals(false, testConfig.subChange);
             assertTrue(testConfig.setProperty("subConfig.val", "new"));
             assertEquals("new", testConfig.subConfig.val);
@@ -75,6 +87,7 @@ public class SerializationConfigTest {
             assertEquals("new", testConfig.test1);
             assertEquals("test2", testConfig.test2); // no annotation ==> didn't save
             assertEquals(true, testConfig.bool);
+            assertEquals(1, testConfig.integer);
             assertEquals(Arrays.asList("defaultEntry", "new"), testConfig.stringList);
             assertEquals("new", testConfig.custom.val);
             assertEquals("new", testConfig.subConfig.val);
