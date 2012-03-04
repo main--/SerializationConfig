@@ -54,6 +54,8 @@ public class SerializationConfigTest {
             assertEquals(0, testConfig.integer);
             assertEquals(Arrays.asList("defaultEntry"), testConfig.stringList);
             assertEquals("subTest", testConfig.subConfig.val);
+            assertEquals("default", testConfig.configurationSerializable.val);
+
             assertTrue(testConfig.setPropertyValue("firstTest", "new")); // alias test
             assertEquals("new", testConfig.test1);
             testConfig.test2 = "new";
@@ -78,6 +80,8 @@ public class SerializationConfigTest {
             assertTrue(testConfig.setProperty("subConfig.val", "new"));
             assertEquals("new", testConfig.subConfig.val);
             assertEquals(true, testConfig.subChange);
+            testConfig.configurationSerializable.val = "new";
+
             config2.set("testobject", testConfig);
             config2.save(configFile);
 
@@ -91,6 +95,7 @@ public class SerializationConfigTest {
             assertEquals(Arrays.asList("defaultEntry", "new"), testConfig.stringList);
             assertEquals("new", testConfig.custom.val);
             assertEquals("new", testConfig.subConfig.val);
+            assertEquals("new", testConfig.configurationSerializable.val);
 
             // test getProperty()
             assertEquals("true", testConfig.getProperty("bool"));

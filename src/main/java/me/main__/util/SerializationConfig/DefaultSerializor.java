@@ -1,6 +1,5 @@
 package me.main__.util.SerializationConfig;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,16 +38,12 @@ final class DefaultSerializor<T> implements Serializor<T, Object> {
             if (String.class.isAssignableFrom(anothertype))
                 return (T) serialized;
 
-            if (SerializationConfig.class.isAssignableFrom(anothertype)) {
-                // this one is serializable itself ==> serialized should be a string-object-map
-                Map<String, Object> serMap = (Map<String, Object>) serialized;
-                // now we need the deserialization-constructor
-                Constructor<T> ctor = anothertype.getConstructor(Map.class);
-                return ctor.newInstance(serMap);
-            } else if (ConfigurationSerializable.class.isAssignableFrom(anothertype)) {
-                // bukkit...? help...?
-                return (T) ConfigurationSerialization.deserializeObject((Map<String,Object>) serialized,
-                        (Class<? extends ConfigurationSerializable>) anothertype);
+            if (ConfigurationSerializable.class.isAssignableFrom(anothertype)) {
+                // has bukkit already deserialized it?
+                if (serialized instanceof ConfigurationSerializable)
+                    return (T) serialized;
+                else
+                    return (T) ConfigurationSerialization.deserializeObject((Map<String, Object>) serialized);
             } else if (Iterable.class.isAssignableFrom(anothertype) && (serialized instanceof Iterable)) {
                 return (T) serialized;
             }

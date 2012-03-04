@@ -164,8 +164,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                 } catch (Exception e) {
                 }
             }
-            else
-                f.setAccessible(false);
+            f.setAccessible(false);
         }
     }
 
@@ -197,11 +196,16 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         return ret;
     }
 
-    private String fixupName(String name) {
-        if (getAliasMap().containsKey(name))
+    private String fixupName(String name, boolean ignoreCase) {
+        if (getAliasMap().containsKey(name)) {
             return getAliasMap().get(name);
-        else
-            return name;
+        } else if (ignoreCase) {
+            for (Map.Entry<String, String> entry : getAliasMap().entrySet()) {
+                if (entry.getKey().equalsIgnoreCase(name))
+                    return entry.getValue();
+            }
+        }
+        return name;
     }
 
     /**
@@ -235,7 +239,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(fixupName(nodes[0], ignoreCase), this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         if (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().isPrimitive()
@@ -277,7 +281,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode, ignoreCase), this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -344,7 +348,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(fixupName(nodes[0], ignoreCase), this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         Property propertyInfo = field.getAnnotation(Property.class);
@@ -391,7 +395,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode, ignoreCase), this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -452,7 +456,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(fixupName(nodes[0], ignoreCase), this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         Property propertyInfo = field.getAnnotation(Property.class);
@@ -484,7 +488,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode, ignoreCase), this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -527,7 +531,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(fixupName(nodes[0]), this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(fixupName(nodes[0], ignoreCase), this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         Property propertyInfo = field.getAnnotation(Property.class);
@@ -548,7 +552,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(fixupName(nextNode), this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(fixupName(nextNode, ignoreCase), this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();

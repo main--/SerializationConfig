@@ -75,6 +75,10 @@ public class TestConfiguration extends SerializationConfig {
     public TestSubConfig subConfig;
     public boolean subChange = false;
 
+    // ConfigurationSerializables work
+    @Property
+    public MyConfigurationSerializable configurationSerializable;
+
     public TestConfiguration() {
         super();
     }
@@ -101,6 +105,8 @@ public class TestConfiguration extends SerializationConfig {
         custom.val = "awesome";
 
         subConfig = new TestSubConfig();
+
+        configurationSerializable = new MyConfigurationSerializable();
     }
 
     protected static Map<String, String> getAliases() {
