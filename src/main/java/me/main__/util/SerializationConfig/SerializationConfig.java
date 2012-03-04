@@ -715,14 +715,21 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         if (validator != null) {
             try {
                 if (validator instanceof ObjectUsingValidator)
-                    newVal = ((ObjectUsingValidator) validator).validateChange(field.getName(), newVal, field.get(this), this);
+                    newVal = ((ObjectUsingValidator) validator).validateChange(field.getName(), newVal, getValue(field), this);
                 else
-                    newVal = validator.validateChange(field.getName(), newVal, field.get(this));
+                    newVal = validator.validateChange(field.getName(), newVal, getValue(field));
             } catch (ClassCastException e) {
                 throw new IllegalArgumentException("Illegal validator!", e);
             }
         }
         return newVal;
+    }
+
+    private Object getValue(Field field) throws IllegalArgumentException, IllegalAccessException {
+        if (VirtualProperty.class.isAssignableFrom(field.getType()))
+            return ((VirtualProperty) field.get(this)).get();
+        else
+            return field.get(this);
     }
 
     private <T> boolean validateAndDoChange(Field field, T newVal) throws Exception {
