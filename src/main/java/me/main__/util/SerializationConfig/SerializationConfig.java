@@ -88,14 +88,6 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     }
 
     /**
-     * This constructor does nothing (okay, it sets the defaults...), it's just here for
-     * you to provide a super constructor that can be overridden and called.
-     */
-    public SerializationConfig() {
-        setDefaults();
-    }
-
-    /**
      * Registers the specified Class with Bukkit.
      * @param clazz The class.
      */
@@ -139,13 +131,31 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     }
 
     /**
+     * This constructor does nothing (okay, it sets the defaults...), it's just here for
+     * you to provide a super constructor that can be overridden and called.
+     */
+    public SerializationConfig() {
+        setDefaults();
+    }
+
+    /**
      * This is the constructor used by Bukkit to deserialize the object.
      * Yep, this does the actual deserialization-work so make sure to have a constructor
      * that takes a {@code Map<String, Object>} and passes it to this super implementation.
      * @param values The map bukkit passes to us.
      */
     public SerializationConfig(Map<String, Object> values) {
-        this();
+        this.loadValues(values);
+    }
+
+    /**
+     * This is basically the same as {@link #SerializationConfig(Map)}, however it's very useful for object-recycling.
+     * <p>
+     * Override this with a public version if you want to.
+     * @param values The map bukkit passes to us.
+     */
+    protected void loadValues(Map<String, Object> values) {
+        setDefaults();
         Field[] fields = this.getClass().getDeclaredFields();
         for (Field f : fields) {
             f.setAccessible(true);
@@ -166,6 +176,14 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             f.setAccessible(false);
         }
+    }
+
+    /**
+     * Copies all values.
+     * @param other The other object.
+     */
+    protected void copyValues(SerializationConfig other) {
+        this.loadValues(other.serialize());
     }
 
     /**
