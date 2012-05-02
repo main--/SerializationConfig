@@ -31,6 +31,13 @@ public @interface Property {
     Class<? extends Validator> validator() default Validator.class;
 
     /**
+     * If this property is a {@link VirtualProperty}{@code <TYPE>} you have
+     * to set this to {@code TYPE.class} because Java generics somehow suck.
+     * @return The type of this virtual property.
+     */
+    Class<?> virtualType() default Object.class;
+
+    /**
      * A description for this property.
      * @return A description for this property.
      */

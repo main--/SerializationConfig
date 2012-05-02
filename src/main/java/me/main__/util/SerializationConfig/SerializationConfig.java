@@ -374,7 +374,13 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                         Serializor serializor = serializorCache.getInstance(serializorClass, this);
                         Object oVal;
                         try {
-                            oVal = serializor.deserialize(value, field.getType());
+                            Class<?> ft;
+                            if (VirtualProperty.class.isAssignableFrom(field.getType()))
+                                ft = propertyInfo.virtualType(); // virtual property
+                            else
+                                ft = field.getType();
+
+                            oVal = serializor.deserialize(value, ft);
                         } catch (IllegalPropertyValueException e) {
                             return false;
                         } catch (RuntimeException e) {
