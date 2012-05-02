@@ -191,7 +191,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         synchronized (pendingVPropChanges) {
             for (Map.Entry<Field, Object> entry : pendingVPropChanges.entrySet()) {
                 try {
+                    entry.getKey().setAccessible(true);
                     ((VirtualProperty) entry.getKey().get(this)).set(entry.getValue());
+                    entry.getKey().setAccessible(false);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
