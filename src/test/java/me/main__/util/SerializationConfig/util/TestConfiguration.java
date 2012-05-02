@@ -79,6 +79,35 @@ public class TestConfiguration extends SerializationConfig {
     @Property
     public MyConfigurationSerializable configurationSerializable;
 
+    // VirtualProperty
+    @Property(virtualType = String.class)
+    public VirtualProperty<String> vString = new VirtualProperty<String>() {
+        @Override
+        public void set(String newValue) {
+            subvString = newValue;
+        }
+
+        @Override
+        public String get() {
+            return subvString;
+        }
+    };
+    public String subvString = "def";
+
+    @Property(virtualType = String.class, persistVirtual = true)
+    public VirtualProperty<String> persistString = new VirtualProperty<String>() {
+        @Override
+        public void set(String newValue) {
+            subpersString = newValue;
+        }
+
+        @Override
+        public String get() {
+            return subpersString;
+        }
+    };
+    public String subpersString = "def";
+
     public TestConfiguration() {
         super();
     }
@@ -107,6 +136,11 @@ public class TestConfiguration extends SerializationConfig {
         subConfig = new TestSubConfig();
 
         configurationSerializable = new MyConfigurationSerializable();
+    }
+
+    @Override
+    public void flushPendingVPropChanges() {
+        super.flushPendingVPropChanges();
     }
 
     protected static Map<String, String> getAliases() {

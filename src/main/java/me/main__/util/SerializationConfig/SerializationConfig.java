@@ -24,7 +24,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     private static final InstanceCache<Validator<?>> validatorCache = new InstanceCache<Validator<?>>();
 
     private static final Map<Class<? extends SerializationConfig>, Map<String, String>> aliasMap =
-            new WeakHashMap<Class<? extends SerializationConfig>, Map<String,String>>();
+            new WeakHashMap<Class<? extends SerializationConfig>, Map<String, String>>();
+
+    private final Map<Field, Object> pendingVPropChanges = new HashMap<Field, Object>();
 
     /**
      * Registers an alias.
@@ -156,25 +158,46 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      */
     protected void loadValues(Map<String, Object> values) {
         setDefaults();
+
         Field[] fields = this.getClass().getDeclaredFields();
         for (Field f : fields) {
             f.setAccessible(true);
-            if (f.isAnnotationPresent(Property.class) && !VirtualProperty.class.isAssignableFrom(f.getType())) {
+            Property propertyInfo = f.getAnnotation(Property.class);
+            if ((propertyInfo != null) && (!VirtualProperty.class.isAssignableFrom(f.getType()) || propertyInfo.persistVirtual())) {
                 try {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
-                    Property propertyInfo = f.getAnnotation(Property.class);
                     Class<? extends Serializor<?, ?>> serializorClass = (Class<? extends Serializor<?, ?>>) propertyInfo.serializor();
                     // get the serializor from SerializorCache
                     Serializor serializor = serializorCache.getInstance(serializorClass, this);
                     // deserialize it and set the field
-                    Object value = serializor.deserialize(values.get(f.getName()), f.getType());
-                    if (value != null)
-                        f.set(this, value);
+                    Object value = serializor.deserialize(values.get(f.getName()), getFieldType(f));
+                    if (value != null) {
+                        if (!VirtualProperty.class.isAssignableFrom(f.getType()))
+                            f.set(this, value);
+                        else synchronized (pendingVPropChanges) {
+                            this.pendingVPropChanges.put(f, value);
+                        }
+                    }
                 } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
             f.setAccessible(false);
+        }
+    }
+
+    protected void flushPendingVPropChanges() {
+        synchronized (pendingVPropChanges) {
+            for (Map.Entry<Field, Object> entry : pendingVPropChanges.entrySet()) {
+                try {
+                    ((VirtualProperty) entry.getKey().get(this)).set(entry.getValue());
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            pendingVPropChanges.clear();
         }
     }
 
@@ -195,16 +218,19 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         Map<String, Object> ret = new LinkedHashMap<String, Object>();
         for (Field f : fields) {
             f.setAccessible(true);
-            if (f.isAnnotationPresent(Property.class) && !VirtualProperty.class.isAssignableFrom(f.getType())) {
+            Property propertyInfo = f.getAnnotation(Property.class);
+            if ((propertyInfo != null) && (!VirtualProperty.class.isAssignableFrom(f.getType()) || propertyInfo.persistVirtual())) {
                 try {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
-                    Property propertyInfo = f.getAnnotation(Property.class);
                     Class<Serializor<?, ?>> serializorClass = (Class<Serializor<?, ?>>) propertyInfo.serializor();
                     // get the serializor from SerializorCache
                     Serializor serializor = serializorCache.getInstance(serializorClass, this);
                     // serialize it and put it into the output-map
-                    ret.put(f.getName(), serializor.serialize(f.get(this)));
+                    Object raw = f.get(this);
+                    if (raw instanceof VirtualProperty)
+                        raw = ((VirtualProperty) raw).get();
+                    ret.put(f.getName(), serializor.serialize(raw));
                 } catch (Exception e) {
                 }
             }
@@ -350,6 +376,13 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         return setProperty(property, value, false);
     }
 
+    private final static Class<?> getFieldType(Field field) {
+        if (VirtualProperty.class.isAssignableFrom(field.getType()))
+            return field.getAnnotation(Property.class).virtualType(); // virtual property
+        else
+            return field.getType();
+    }
+
     /**
      * Sets a property using a {@link String}.
      *
@@ -374,13 +407,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                         Serializor serializor = serializorCache.getInstance(serializorClass, this);
                         Object oVal;
                         try {
-                            Class<?> ft;
-                            if (VirtualProperty.class.isAssignableFrom(field.getType()))
-                                ft = propertyInfo.virtualType(); // virtual property
-                            else
-                                ft = field.getType();
-
-                            oVal = serializor.deserialize(value, ft);
+                            oVal = serializor.deserialize(value, getFieldType(field));
                         } catch (IllegalPropertyValueException e) {
                             return false;
                         } catch (RuntimeException e) {

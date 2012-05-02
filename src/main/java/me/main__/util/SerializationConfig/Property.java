@@ -38,6 +38,13 @@ public @interface Property {
     Class<?> virtualType() default Object.class;
 
     /**
+     * If this property is a {@link VirtualProperty} you can set
+     * this to {@code true} if you want the property to be saved.
+     * @return Whether this property should be saved if it's virtual.
+     */
+    boolean persistVirtual() default false;
+
+    /**
      * A description for this property.
      * @return A description for this property.
      */

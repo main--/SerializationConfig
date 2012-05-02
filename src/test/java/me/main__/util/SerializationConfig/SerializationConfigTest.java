@@ -55,6 +55,9 @@ public class SerializationConfigTest {
             assertEquals(Arrays.asList("defaultEntry"), testConfig.stringList);
             assertEquals("subTest", testConfig.subConfig.val);
             assertEquals("default", testConfig.configurationSerializable.val);
+            assertEquals("def", testConfig.vString.get());
+            assertEquals("def", testConfig.getProperty("vString"));
+            assertEquals("def", testConfig.getProperty("persistString"));
 
             assertTrue(testConfig.setPropertyValue("firstTest", "new")); // alias test
             assertEquals("new", testConfig.test1);
@@ -81,6 +84,10 @@ public class SerializationConfigTest {
             assertEquals("new", testConfig.subConfig.val);
             assertEquals(true, testConfig.subChange);
             testConfig.configurationSerializable.val = "new";
+            assertTrue(testConfig.setProperty("vString", "newVirtual"));
+            assertEquals("newVirtual", testConfig.vString.get());
+            assertTrue(testConfig.setProperty("persistString", "newPersist"));
+            assertEquals("newPersist", testConfig.persistString.get());
 
             config2.set("testobject", testConfig);
             config2.save(configFile);
@@ -88,6 +95,7 @@ public class SerializationConfigTest {
             // 3rd round
             FileConfiguration config3 = YamlConfiguration.loadConfiguration(configFile);
             testConfig = (TestConfiguration) config3.get("testobject");
+            testConfig.flushPendingVPropChanges();
             assertEquals("new", testConfig.test1);
             assertEquals("test2", testConfig.test2); // no annotation ==> didn't save
             assertEquals(true, testConfig.bool);
@@ -96,6 +104,8 @@ public class SerializationConfigTest {
             assertEquals("new", testConfig.custom.val);
             assertEquals("new", testConfig.subConfig.val);
             assertEquals("new", testConfig.configurationSerializable.val);
+            assertEquals("def", testConfig.getProperty("vString")); // not saved
+            assertEquals("newPersist", testConfig.getProperty("persistString")); // saved
 
             // test getProperty()
             assertEquals("true", testConfig.getProperty("bool"));
