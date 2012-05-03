@@ -187,6 +187,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         }
     }
 
+    /**
+     * Calls all virtual property setters with the loaded values.
+     */
     protected void flushPendingVPropChanges() {
         synchronized (pendingVPropChanges) {
             for (Map.Entry<Field, Object> entry : pendingVPropChanges.entrySet()) {
@@ -200,6 +203,32 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
 
             pendingVPropChanges.clear();
+        }
+    }
+
+    /**
+     * I'm too lazy to explain this...
+     *
+     * @see com.onarandombox.MultiverseCore.MVWorld
+     */
+    protected void buildVPropChanges() {
+        synchronized (pendingVPropChanges) {
+            if (!pendingVPropChanges.isEmpty())
+                throw new IllegalStateException("pendingVPropChanges has to be empty!");
+
+            try {
+                for (Field f : this.getClass().getDeclaredFields()) {
+                    f.setAccessible(true);
+                    if (VirtualProperty.class.isAssignableFrom(f.getType())
+                            && f.isAnnotationPresent(Property.class)
+                            && f.getAnnotation(Property.class).persistVirtual()) {
+                        pendingVPropChanges.put(f, ((VirtualProperty) f.get(this)).get());
+                    }
+                    f.setAccessible(false);
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e); // should never happen
+            }
         }
     }
 
@@ -219,6 +248,12 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         Field[] fields = this.getClass().getDeclaredFields();
         Map<String, Object> ret = new LinkedHashMap<String, Object>();
         for (Field f : fields) {
+            if (pendingVPropChanges.containsKey(f)) {
+                ret.put(f.getName(), serializorCache.getInstance(
+                        f.getAnnotation(Property.class).serializor())
+                        .serialize(pendingVPropChanges.get(f)));
+                continue;
+            }
             f.setAccessible(true);
             Property propertyInfo = f.getAnnotation(Property.class);
             if ((propertyInfo != null) && (!VirtualProperty.class.isAssignableFrom(f.getType()) || propertyInfo.persistVirtual())) {

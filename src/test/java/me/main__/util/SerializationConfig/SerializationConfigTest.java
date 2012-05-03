@@ -47,6 +47,7 @@ public class SerializationConfigTest {
             // load it once again
             FileConfiguration config2 = YamlConfiguration.loadConfiguration(configFile);
             testConfig = (TestConfiguration) config2.get("testobject");
+            testConfig.flushPendingVPropChanges();
             assertEquals("test1", testConfig.test1);
             assertEquals("test2", testConfig.test2);
             assertEquals("awesome", testConfig.custom.val);
