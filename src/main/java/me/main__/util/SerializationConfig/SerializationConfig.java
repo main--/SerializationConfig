@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -26,7 +28,19 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
     private static final Map<Class<? extends SerializationConfig>, Map<String, String>> aliasMap =
             new WeakHashMap<Class<? extends SerializationConfig>, Map<String, String>>();
 
+    private static Logger logger = null;
+
     private final Map<Field, Object> pendingVPropChanges = new HashMap<Field, Object>();
+
+    /**
+     * Initializes SerializationConfig with a logger to which to spout out any errors.  If this is not called, error
+     * logging will not occur.
+     *
+     * @param log The logger to log errors to.
+     */
+    public static void initLogging(Logger log) {
+        logger = log;
+    }
 
     /**
      * Registers an alias.
@@ -150,6 +164,18 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         this.loadValues(values);
     }
 
+    private void log(Level level, String message) {
+        this.log(level, message, null);
+    }
+
+    private void log(Level level, String message, Exception e) {
+        if (logger != null) {
+            logger.log(level, message);
+        } else if (e != null) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * This is basically the same as {@link #SerializationConfig(Map)}, however it's very useful for object-recycling.
      * <p>
@@ -180,7 +206,8 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    this.log(Level.WARNING, "Exception occurred while initializing config: ", e);
+                    this.log(Level.WARNING, e.getClass() + ": " + e.getMessage());
                 }
             }
             f.setAccessible(false);
