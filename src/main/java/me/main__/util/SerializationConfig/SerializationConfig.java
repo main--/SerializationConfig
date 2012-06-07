@@ -342,12 +342,19 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @see #setPropertyValueUnchecked(String, Object, boolean)
      */
     public final boolean setPropertyValue(String property, Object value, boolean ignoreCase) throws ClassCastException, NoSuchPropertyException {
+        return this.setPropertyValue(property, value, ignoreCase, false);
+    }
+
+    private final boolean setPropertyValue(String property, Object value, boolean ignoreCase, boolean recursive) throws ClassCastException, NoSuchPropertyException {
+        if (!recursive) {
+            property = fixupName(property, ignoreCase);
+        }
         try {
             String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(fixupName(nodes[0], ignoreCase), this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         if (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().isPrimitive()
@@ -389,7 +396,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(fixupName(nextNode, ignoreCase), this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(nextNode, this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -403,7 +410,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             Exception ex = null;
             boolean ret;
             try {
-                ret = child.setPropertyValue(sb.toString(), value, ignoreCase);
+                ret = child.setPropertyValue(sb.toString(), value, ignoreCase, true);
             } catch (Exception e) {
                 ex = e;
                 ret = false;
@@ -458,12 +465,19 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      * @see #setPropertyUnchecked(String, String, boolean)
      */
     public final boolean setProperty(String property, String value, boolean ignoreCase) throws NoSuchPropertyException {
+        return this.setProperty(property, value, ignoreCase, false);
+    }
+
+    private final boolean setProperty(String property, String value, boolean ignoreCase, boolean recursive) throws NoSuchPropertyException {
+        if (!recursive) {
+            property = fixupName(property, ignoreCase);
+        }
         try {
             String[] nodes = property.split("\\."); // this is a regex so we have to escape the '.'
             if (nodes.length == 1) {
                 Field field = null;
                 try {
-                    field = ReflectionUtils.getField(fixupName(nodes[0], ignoreCase), this.getClass(), ignoreCase);
+                    field = ReflectionUtils.getField(nodes[0], this.getClass(), ignoreCase);
                     field.setAccessible(true);
                     if (field.isAnnotationPresent(Property.class)) {
                         Property propertyInfo = field.getAnnotation(Property.class);
@@ -510,7 +524,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             }
             // recursion...
             String nextNode = nodes[0];
-            Field nodeField = ReflectionUtils.getField(fixupName(nextNode, ignoreCase), this.getClass(), ignoreCase);
+            Field nodeField = ReflectionUtils.getField(nextNode, this.getClass(), ignoreCase);
             nodeField.setAccessible(true);
             if (!nodeField.isAnnotationPresent(Property.class))
                 throw new Exception();
@@ -524,7 +538,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
             Exception ex = null;
             boolean ret;
             try {
-                ret = child.setProperty(sb.toString(), value, ignoreCase);
+                ret = child.setProperty(sb.toString(), value, ignoreCase, true);
             } catch (Exception e) {
                 ex = e;
                 ret = false;
