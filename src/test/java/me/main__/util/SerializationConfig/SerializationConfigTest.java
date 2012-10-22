@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import me.main__.util.SerializationConfig.util.*;
 
@@ -34,6 +35,7 @@ public class SerializationConfigTest {
         try {
             // register classes
             SerializationConfig.registerAll(TestConfiguration.class);
+            SerializationConfig.initLogging(Logger.getLogger("SerializationConfig"));
 
             File configFile = new File("testConfig.yml");
             configFile.createNewFile();
