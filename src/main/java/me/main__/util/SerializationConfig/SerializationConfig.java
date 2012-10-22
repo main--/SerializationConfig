@@ -207,9 +207,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                         }
                     }
                 } catch (IllegalAccessException e) {
-                    logger.log(Level.WARNING, "Access exception while loading value for " + f.getName(), e);
+                    log(Level.WARNING, "Access exception while loading value for " + f.getName(), e);
                 } catch (IllegalPropertyValueException e) {
-                    logger.log(Level.WARNING, "Exception while loading value for " + f.getName(), e);
+                    log(Level.WARNING, "Exception while loading value for " + f.getName(), e);
                 }
             }
             f.setAccessible(false);
