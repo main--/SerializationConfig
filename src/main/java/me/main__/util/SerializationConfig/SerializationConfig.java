@@ -189,7 +189,8 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         for (Field f : fields) {
             f.setAccessible(true);
             Property propertyInfo = f.getAnnotation(Property.class);
-            if ((propertyInfo != null) && (!VirtualProperty.class.isAssignableFrom(f.getType()) || propertyInfo.persistVirtual())) {
+            final Object serializedValue = values.get(f.getName());
+            if ((serializedValue != null) && (propertyInfo != null) && (!VirtualProperty.class.isAssignableFrom(f.getType()) || propertyInfo.persistVirtual())) {
                 try {
                     // yay, this field is a property :D
                     // let's continue and try to serialize it
@@ -197,7 +198,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                     // get the serializor from SerializorCache
                     Serializor serializor = serializorCache.getInstance(serializorClass, this);
                     // deserialize it and set the field
-                    Object value = serializor.deserialize(values.get(f.getName()), getFieldType(f));
+                    final Object value = serializor.deserialize(serializedValue, getFieldType(f));
                     if (value != null) {
                         if (!VirtualProperty.class.isAssignableFrom(f.getType()))
                             f.set(this, value);
@@ -205,9 +206,10 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
                             this.pendingVPropChanges.put(f, value);
                         }
                     }
-                } catch (Exception e) {
-                    this.log(Level.WARNING, "Exception occurred while initializing config: ", e);
-                    this.log(Level.WARNING, e.getClass() + ": " + e.getMessage());
+                } catch (IllegalAccessException e) {
+                    logger.log(Level.WARNING, "Access exception while loading value for " + f.getName(), e);
+                } catch (IllegalPropertyValueException e) {
+                    logger.log(Level.WARNING, "Exception while loading value for " + f.getName(), e);
                 }
             }
             f.setAccessible(false);
