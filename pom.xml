@@ -4,7 +4,7 @@
 
     <groupId>me.main__.util</groupId>
     <artifactId>SerializationConfig</artifactId>
-    <version>1.6b</version>
+    <version>1.6c</version>
     <packaging>jar</packaging>
     <name>${project.artifactId}</name>
     <description>This provides you with an abstract class that can be extended to create a type that can easily be stored in the Bukkit config!</description>
