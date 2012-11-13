@@ -32,6 +32,9 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
 
     private final Map<Field, Object> pendingVPropChanges = new HashMap<Field, Object>();
 
+    private Object objectUsing = this;
+    private Validator globalValidator = null;
+
     /**
      * Initializes SerializationConfig with a logger to which to spout out any errors.  If this is not called, error
      * logging will not occur.
@@ -93,6 +96,24 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
      */
     protected final void registerAlias(String alias, String property) {
         registerAlias(this.getClass(), alias, property);
+    }
+
+    /**
+     * Registers a different object as the object used for {@link ObjectUsingValidator} rather than this object.
+     *
+     * @param object The new object using validator object.
+     */
+    protected void registerObjectUsing(Object object) {
+        this.objectUsing = object;
+    }
+
+    /**
+     * Registers a global validator for all properties without validators.
+     *
+     * @param validator A global validator for all validatorless properties.
+     */
+    protected void registerGlobalValidator(Validator validator) {
+        this.globalValidator = validator;
     }
 
     /**
@@ -835,10 +856,33 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         }
     }
 
+    private Map<Field, Validator> validatorMap = new HashMap<Field, Validator>();
+
+    /**
+     * Registers a validator object for a particular field name.
+     *
+     * Useful for when annotated Validators just won't cut it.
+     *
+     * @param fieldName The field name to set the validator for.
+     * @param validator The validator for the given field.
+     */
+    protected void registerValidator(String fieldName, Validator validator) {
+        try {
+            Field field = ReflectionUtils.getField(fieldName, getClass(), true);
+            if (field != null) {
+                validatorMap.put(field, validator);
+            }
+        } catch (NoSuchFieldException ignore) { }
+    }
+
     private Object validate(Field field, Property propertyInfo, Object newVal) throws IllegalAccessException, ChangeDeniedException {
         Validator<Object> validator = null;
-        if (propertyInfo.validator() != Validator.class) { // only if a validator was set
+        if (validatorMap.containsKey(field)) {
+            validator = validatorMap.get(field);
+        } else if (propertyInfo.validator() != Validator.class) { // only if a validator was set
             validator = validatorCache.getInstance(propertyInfo.validator(), this);
+        } else if (globalValidator != null) {
+            validator = globalValidator;
         } else if (this.getClass().isAnnotationPresent(ValidateAllWith.class)) {
             ValidateAllWith validAll = this.getClass().getAnnotation(ValidateAllWith.class);
             validator = validatorCache.getInstance(validAll.value(), this);
@@ -846,7 +890,7 @@ public abstract class SerializationConfig implements ConfigurationSerializable {
         if (validator != null) {
             try {
                 if (validator instanceof ObjectUsingValidator)
-                    newVal = ((ObjectUsingValidator) validator).validateChange(field.getName(), newVal, getValue(field), this);
+                    newVal = ((ObjectUsingValidator) validator).validateChange(field.getName(), newVal, getValue(field), objectUsing);
                 else
                     newVal = validator.validateChange(field.getName(), newVal, getValue(field));
             } catch (ClassCastException e) {
